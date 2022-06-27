@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, date
 import pyodbc
 import time
+import datetime
 import re
 import seaborn as sns
 import datetime 
@@ -68,6 +69,32 @@ def modeloriesgos(input_table_1,dir):
         warnings.simplefilter("ignore")
         fxn()
 
+    #Resultado de la consulta
+    responseMessage = pd.DataFrame(
+        {
+            'Fechap':[],
+            'num_solicitud':[],
+            'score':[],
+            'mensajeScore':[],
+            'Oficina':[],
+            'Asesor':[],
+            'Edad':[],
+            'Sexo':[],
+            'EstadoCivil':[],
+            'TipoVivienda':[],
+            'NivelInstruccion':[],
+            'Monto_sol':[],
+            'Plazo':[],
+            'NroDependientes':[],
+            'AniosResidencia':[],
+            'Telefono':[],
+            'Profesion':[],
+            'DiaDeLaSemana':[],
+            'Departamento':[],
+            'DestinoCredito':[]
+
+        }
+    )
 
     ###prueba
 
@@ -155,6 +182,28 @@ def modeloriesgos(input_table_1,dir):
     input_table_1['plazo']=input_table_1['plazo_sol']
     input_table_1['Edad']=round((input_table_1['Fechap']-  input_table_1['FechaNacimiento'])/np.timedelta64(1,'Y'),0)
     input_table_1['Fecha_so']
+
+    responseMessage['Fechap']= pd.to_datetime(responseMessage['Fechap'])
+    responseMessage['Fechap']= input_table_1['Fechap']
+    responseMessage['num_solicitud']= input_table_1['num_solicitud']
+    responseMessage['Edad'] = input_table_1['Edad']
+    responseMessage['Sexo'] = input_table_1['Sexo']
+    responseMessage['EstadoCivil'] = input_table_1['EstadoCivil']
+    responseMessage['TipoVivienda'] = input_table_1['TipoVivienda']
+    responseMessage['NivelInstruccion'] = input_table_1['NivelInstruccion']
+    responseMessage['Monto_sol'] = input_table_1['Monto_sol']
+    responseMessage['Plazo'] = input_table_1['plazo_sol']
+    responseMessage['NroDependientes'] = input_table_1['NroDependientes']
+    responseMessage['AniosResidencia'] = input_table_1['AniosResidencia']
+    responseMessage['Telefono'] = input_table_1['Telefono']
+    responseMessage['Profesion'] = input_table_1['Profesion']
+    responseMessage['Departamento'] = input_table_1['Departamento']
+    responseMessage['DestinoCredito'] = input_table_1['DestinoCredito']
+    responseMessage['Oficina'] = input_table_1['Oficina']
+    responseMessage['Asesor'] = input_table_1['Asesor']
+
+    
+
     
     td= input_table_1.copy() 
     Result = pd.DataFrame()
@@ -188,7 +237,7 @@ def modeloriesgos(input_table_1,dir):
     'NivelInstruccion',
     'Profesion',
     'Departamento',
-    'telefono',
+    'Telefono',
     'NroDependientes',
     'AniosResidencia',
     'Fecha_so',
@@ -210,7 +259,7 @@ def modeloriesgos(input_table_1,dir):
     features_n=td.select_dtypes(exclude='object').columns.tolist()
 
     features_n.remove('Fecha_so')
-    features_c.remove('telefono')
+    features_c.remove('Telefono')
 
     for label in features_c:
         #print(label)
@@ -234,13 +283,14 @@ def modeloriesgos(input_table_1,dir):
     td['Fecha_so']=pd.to_datetime(td['Fecha_so'])
     td['DiaSemana'] = td['Fecha_so'].dt.dayofweek
     td['DiaSemana']=np.where(td['DiaSemana']==0,"Otros",np.where(td['DiaSemana']==1,"Martes",np.where(td['DiaSemana']==2,"Miercoles",np.where(td['DiaSemana']==3,"Jueves",np.where(td['DiaSemana']==4,"Viernes",np.where(td['DiaSemana']==5,"Otros","Otros"))))))
-
+    
+    responseMessage['DiaDeLaSemana'][0] =input_table_1['Fechap'][0].strftime("%A")
 
     #creación de variables
 
     #td['Nombre_producto_sol']=np.where(td['Nombre_producto_sol'].str.lower().str.contains('pyme'),'PYME','CONN')
 
-    td['NumReferenciasTel']=td['telefono'].apply(lambda x:x.rstrip().lstrip().count(' ')+x.rstrip().lstrip().count(',')+x.rstrip().lstrip().count(';')+1)
+    td['NumReferenciasTel']=td['Telefono'].apply(lambda x:x.rstrip().lstrip().count(' ')+x.rstrip().lstrip().count(',')+x.rstrip().lstrip().count(';')+1)
 
 
 
@@ -281,7 +331,7 @@ def modeloriesgos(input_table_1,dir):
     TransformVariables2(Rango,valores)
 
 
-    td=td.drop(['telefono','Fecha_so'],axis=1)
+    td=td.drop(['Telefono','Fecha_so'],axis=1)
     features_c=td.select_dtypes(include='object').columns.tolist()
 
 
@@ -366,6 +416,10 @@ def modeloriesgos(input_table_1,dir):
     X['FechaCarga']=date.today()
     X['num_solicitud']=td.reset_index()['num_solicitud']
     output_table_1=X[['Fecha','Predict','num_solicitud','probabilidades','FechaCarga']]
+
+    responseMessage['score']= output_table_1['probabilidades'] 
+    responseMessage['mensajeScore']= output_table_1['Predict']
+    
     
     
     #dirección de la búsqueda#
@@ -384,7 +438,7 @@ def modeloriesgos(input_table_1,dir):
 
     cursor.execute("INSERT INTO PruebaRiezgo_2(Fecha,Predict,num_solicitud,probabilidades,FechaCarga) values (?, ?, ?, ?, ?)",output_table_1['Fecha'][0],output_table_1['Predict'][0],int(output_table_1['num_solicitud'][0]),output_table_1['probabilidades'][0],output_table_1['FechaCarga'][0])
     cnxn.commit()
-    return output_table_1
+    return responseMessage
 
 
 # Testing Route
@@ -413,7 +467,7 @@ def getModelo():
     # Actividad = request.args.get('Actividad','',type=str)
     # Profesion = request.args.get('Profesion','',type=str)
     # Departamento = request.args.get('Departamento','',type=str)
-    # telefono = request.args.get('telefono','',type=str)
+    # Telefono = request.args.get('Telefono','',type=str)
     # NroDependientes = request.args.get('NroDependientes',0,type=int)
     # AniosResidencia = request.args.get('AniosResidencia',0,type=int)
     num_solicitud = request.json['num_solicitud']
@@ -429,9 +483,13 @@ def getModelo():
     Actividad = request.json['Actividad']
     Profesion = request.json['Profesion']
     Departamento = request.json['Departamento']
-    telefono = request.json['telefono']
+    Telefono = request.json['Telefono']
     NroDependientes = request.json['NroDependientes']
     AniosResidencia = request.json['AniosResidencia']
+
+    Oficina = request.json['Oficina']
+    Asesor = request.json['Asesor']
+    DestinoCredito = request.json['DestinoCredito']
     
     var_1=[num_solicitud]
     var_2=[Fechap]
@@ -446,9 +504,13 @@ def getModelo():
     var_11=[Actividad]
     var_12=[Profesion]
     var_13=[Departamento]
-    var_14=[telefono]
+    var_14=[Telefono]
     var_15=[NroDependientes]
     var_16=[AniosResidencia]
+
+    var_17=[Oficina]
+    var_18=[Asesor]
+    var_19=[DestinoCredito]
     
     #se crea una lista
     df=[]
@@ -468,15 +530,40 @@ def getModelo():
     df.append(var_14)
     df.append(var_15)
     df.append(var_16)
+    df.append(var_17)
+    df.append(var_18)
+    df.append(var_19)
     
     df = pd.DataFrame (df).transpose()
     df.columns=['num_solicitud','Fechap','idEstado','Monto_sol','plazo_sol',
                 'FechaNacimiento','Sexo','EstadoCivil','TipoVivienda','NivelInstruccion',
-                'Actividad','Profesion','Departamento','telefono','NroDependientes','AniosResidencia']
+                'Actividad','Profesion','Departamento','Telefono','NroDependientes','AniosResidencia','Oficina','Asesor','DestinoCredito']
     
-    modeloriesgos(df,"D:/Modelo Grupo Solidario")
+    response = modeloriesgos(df,"D:/Modelo Grupo Solidario")
     
-    return "<h1>Datos Procesados</h1>"
+    return ({'Fechap': response['Fechap'][0],
+              'num_solictud': response['num_solicitud'][0],
+              'score': response['score'][0],
+              'mensajeScore': response['mensajeScore'][0],
+              'Oficina': response['Oficina'][0],
+              'Asesor': response['Asesor'][0],
+              'Edad':response['Edad'][0],
+              'Sexo': response['Sexo'][0],
+              'EstadoCivil': response['EstadoCivil'][0],
+              'TipoVivienda': response['TipoVivienda'][0],
+              'NivelInstruccion': response['NivelInstruccion'][0],
+              'Monto_sol': response['Monto_sol'][0],
+              'Plazo_sol': response['Plazo'][0],
+              'NroDependientes': response['NroDependientes'][0],
+              'AniosResidencia': response['AniosResidencia'][0],
+              'Telefono': response['Telefono'][0],
+              'Profesion': response['Profesion'][0],
+              'Departamento': response['Departamento'][0],
+              'DiaDeLaSemana': response['DiaDeLaSemana'][0],
+              'DestinoCredito': response['DestinoCredito'][0],
+
+
+            })
 
 
 if __name__ == '__main__':
