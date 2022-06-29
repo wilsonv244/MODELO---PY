@@ -203,6 +203,11 @@ def modeloriesgos(input_table_1,dir):
     responseMessage['Asesor'] = input_table_1['Asesor']
 
     
+    responseMessage['DiaDeLaSemana']=pd.to_datetime(responseMessage['DiaDeLaSemana'])
+    responseMessage['DiaDeLaSemana'] = input_table_1['Fechap'].dt.dayofweek
+    responseMessage['DiaDeLaSemana']=np.where(responseMessage['DiaDeLaSemana']==0,"Otros",np.where(responseMessage['DiaDeLaSemana']==1,"Martes",np.where(responseMessage['DiaDeLaSemana']==2,"Miercoles",np.where(responseMessage['DiaDeLaSemana']==3,"Jueves",np.where(responseMessage['DiaDeLaSemana']==4,"Viernes",np.where(responseMessage['DiaDeLaSemana']==5,"Otros","Otros"))))))
+
+    
 
     
     td= input_table_1.copy() 
@@ -281,10 +286,12 @@ def modeloriesgos(input_table_1,dir):
 
     #Creación de la variable Dia de la semana
     td['Fecha_so']=pd.to_datetime(td['Fecha_so'])
+    #td['Fecha_so'] = input_table_1['Fechap']
     td['DiaSemana'] = td['Fecha_so'].dt.dayofweek
+    print(td['DiaSemana'])
     td['DiaSemana']=np.where(td['DiaSemana']==0,"Otros",np.where(td['DiaSemana']==1,"Martes",np.where(td['DiaSemana']==2,"Miercoles",np.where(td['DiaSemana']==3,"Jueves",np.where(td['DiaSemana']==4,"Viernes",np.where(td['DiaSemana']==5,"Otros","Otros"))))))
     
-    responseMessage['DiaDeLaSemana'][0] =input_table_1['Fechap'][0].strftime("%A")
+    #responseMessage['DiaDeLaSemana']=td['DiaSemana']
 
     #creación de variables
 
@@ -470,6 +477,7 @@ def getModelo():
     # Telefono = request.args.get('Telefono','',type=str)
     # NroDependientes = request.args.get('NroDependientes',0,type=int)
     # AniosResidencia = request.args.get('AniosResidencia',0,type=int)
+    
     num_solicitud = request.json['num_solicitud']
     Fechap = request.json['Fechap']
     idEstado = request.json['idEstado']
