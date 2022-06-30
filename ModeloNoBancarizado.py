@@ -443,7 +443,10 @@ def modeloriesgos(input_table_1,dir):
     cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=10.4.12.15;DATABASE=GNormativas;UID=uNormativas;PWD=123456789')
     cursor = cnxn.cursor()
 
-    cursor.execute("INSERT INTO PruebaRiezgo_2(Fecha,Predict,num_solicitud,probabilidades,FechaCarga) values (?, ?, ?, ?, ?)",output_table_1['Fecha'][0],output_table_1['Predict'][0],int(output_table_1['num_solicitud'][0]),output_table_1['probabilidades'][0],output_table_1['FechaCarga'][0])
+    cursor.execute("INSERT INTO PruebaRiezgo_3(dFechaConsulta,cNumeroSolicitud,nResultadoScore,cResultadoMensaje,cMotivoRechazo,cOficina,cAsesor,nEdad,cSexo,cEstadoCivil,cTipoVivienda,cNivelDeInstruccion,nMontoSolicitado,nPlazo,nNroDependientes,nAniosResidencia,cTelefono,cProfesion,cDiaSemana,cDepartamento,cDestinoCredito) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    output_table_1['Fecha'][0],int(output_table_1['num_solicitud'][0]),output_table_1['probabilidades'][0],responseMessage['mensajeScore'][0],"",responseMessage['Oficina'][0],responseMessage['Asesor'][0],responseMessage['Edad'][0],responseMessage['Sexo'][0],
+                    responseMessage['EstadoCivil'][0],responseMessage['TipoVivienda'][0],responseMessage['NivelInstruccion'][0],responseMessage['Monto_sol'][0],responseMessage['Plazo'][0],responseMessage['NroDependientes'][0],responseMessage['AniosResidencia'][0],
+                    responseMessage['Telefono'][0],responseMessage['Profesion'][0],responseMessage['DiaDeLaSemana'][0],responseMessage['Departamento'][0],responseMessage['DestinoCredito'][0])
     cnxn.commit()
     return responseMessage
 
