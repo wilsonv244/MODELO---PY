@@ -8,8 +8,8 @@ from datetime import datetime, date
 import pyodbc
 import time
 import re
-from requests import ReadTimeout
-import seaborn as sns
+#from requests import ReadTimeout
+#import seaborn as sns
 import datetime 
 import pyodbc
 from  calendar import monthrange
@@ -32,7 +32,7 @@ import pyodbc
 import time
 import datetime
 import re
-import seaborn as sns
+#import seaborn as sns
 import datetime 
 from  calendar import monthrange
 
@@ -43,10 +43,10 @@ def modeloriesgos(input_table_1,dir):
     def fxn():
         warnings.warn("deprecated", DeprecationWarning)
     d=dir
-    os.chdir(d)
+    #os.chdir(d)
 
 
-    from sklearn.tree import DecisionTreeClassifier,export_graphviz
+    #from sklearn.tree import DecisionTreeClassifier,export_graphviz
     from IPython.display import Image as PImage
     from subprocess import check_call
     from PIL import Image, ImageDraw, ImageFont
@@ -149,7 +149,7 @@ def modeloriesgos(input_table_1,dir):
     ParametroFecha=ParametroFecha.strftime("%Y-%m-%d")
 
 
-    folder='./Files_'+str(fecha_spanish(ParametroFecha))+'/'
+    folder='/Modelo Grupo Solidario/data/Files_'+str(fecha_spanish(ParametroFecha))+'/'
     print('---------------el nuevo modelo')
     print(folder)
     #folder='./Files_Ene22/'

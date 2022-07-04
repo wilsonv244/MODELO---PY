@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  backend:
+    container_name: modeloNB
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: 'python ModeloNoBancarizado.py'
+    ports:
+      - 8005:4000
+    volumes:
+      - type: bind
+        source: D:\Modelo Grupo Solidario
+        target: /Modelo Grupo Solidario/data
