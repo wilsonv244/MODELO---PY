@@ -1,4 +1,6 @@
 # %%
+from ast import Try
+from types import MethodType
 import pandas as pd
 import numpy as np
 import warnings
@@ -15,6 +17,9 @@ import pyodbc
 from  calendar import monthrange
 
 from flask import Flask, request, render_template
+from sklearn.covariance import fast_mcd
+from sqlalchemy import false, null, true
+from zmq import EVENT_CLOSE_FAILED
 app = Flask(__name__)
 
 #from products import products
@@ -35,6 +40,8 @@ import re
 #import seaborn as sns
 import datetime 
 from  calendar import monthrange
+
+
 
 def modeloriesgos(input_table_1,dir):
 
@@ -172,7 +179,7 @@ def modeloriesgos(input_table_1,dir):
     
 
 
-    input_table_1['Fechap']=pd.to_datetime(input_table_1['Fechap'])
+    input_table_1['Fechap']=pd.to_datetime(input_table_1['Fechap'],dayfirst=True)
     
     input_table_1=input_table_1[(input_table_1['Fechap'].apply(lambda x:last_day_of_month(x))==last_day_of_month(today).strftime("%Y-%m-%d")) & (input_table_1['idEstado']==1)]
     #input_table_1=input_table_1[(input_table_1['Fechap'].apply(lambda x:last_day_of_month(x))==last_day_of_month(today).strftime("%Y-%m-%d")) & (input_table_1['idEstado']==1)]
@@ -440,11 +447,11 @@ def modeloriesgos(input_table_1,dir):
     # output_table_1.to_sql('PL_PRUEBA',con=engine, if_exists='append', index=False)#LA BASE SE LLAMA PL_PRUEBA
     # return output_table_1 
     #cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=10.5.5.226;DATABASE=BD_RIESGOS;UID=wvargas;PWD=Losandes.123')
+    
     cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=10.4.12.15;DATABASE=GNormativas;UID=uNormativas;PWD=123456789')
     cursor = cnxn.cursor()
-
-    cursor.execute("INSERT INTO PruebaRiezgo_3(dFechaConsulta,cNumeroSolicitud,nResultadoScore,cResultadoMensaje,cMotivoRechazo,cOficina,cAsesor,nEdad,cSexo,cEstadoCivil,cTipoVivienda,cNivelDeInstruccion,nMontoSolicitado,nPlazo,nNroDependientes,nAniosResidencia,cTelefono,cProfesion,cDiaSemana,cDepartamento,cDestinoCredito) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    output_table_1['Fecha'][0],int(output_table_1['num_solicitud'][0]),output_table_1['probabilidades'][0],responseMessage['mensajeScore'][0],"",responseMessage['Oficina'][0],responseMessage['Asesor'][0],responseMessage['Edad'][0],responseMessage['Sexo'][0],
+    cursor.execute("INSERT INTO PruebaRiezgo_3(dFechaConsulta,cNumeroSolicitud,nResultadoScore,cResultadoMensaje,cOficina,cAsesor,nEdad,cSexo,cEstadoCivil,cTipoVivienda,cNivelDeInstruccion,nMontoSolicitado,nPlazo,nNroDependientes,nAniosResidencia,cTelefono,cProfesion,cDiaSemana,cDepartamento,cDestinoCredito) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    output_table_1['Fecha'][0],int(output_table_1['num_solicitud'][0]),output_table_1['probabilidades'][0],responseMessage['mensajeScore'][0],responseMessage['Oficina'][0],responseMessage['Asesor'][0],responseMessage['Edad'][0],responseMessage['Sexo'][0],
                     responseMessage['EstadoCivil'][0],responseMessage['TipoVivienda'][0],responseMessage['NivelInstruccion'][0],responseMessage['Monto_sol'][0],responseMessage['Plazo'][0],responseMessage['NroDependientes'][0],responseMessage['AniosResidencia'][0],
                     responseMessage['Telefono'][0],responseMessage['Profesion'][0],responseMessage['DiaDeLaSemana'][0],responseMessage['Departamento'][0],responseMessage['DestinoCredito'][0])
     cnxn.commit()
@@ -456,11 +463,69 @@ def modeloriesgos(input_table_1,dir):
 def index():
     
     return "<h1>Rogger - Index</h1>"
-
 # Testing Route
+@app.route('/ObtenerExcepcion', methods=['POST'])
+def getErrors():
+    errores = {
+
+    }
+    # try:
+    #     num_solicitud = request.json['num_solicitud']
+    # except:
+    #     errores = {'codigo':1, 'mensaje':'Numero de solicitud es olbigatorio'}
+    # try:
+    #     Fechap = request.json['Fechap']
+    # except:
+    #     errores = {'codigo':2, 'mensaje':'el campo de fecha es olbigatorio'}
+
+    num_solicitud = request.json['num_solicitud']
+    Fechap = request.json['Fechap']
+    Monto_sol = request.json['Monto_sol']
+    plazo_sol = request.json['plazo_sol']
+    MotivoRechazo = request.json['MotivoRechazo']
+
+    obtenerExcepcion = pd.DataFrame(
+    {
+        "num_solicitud" : [num_solicitud],
+        "Fechap" : [Fechap],
+        "Monto_sol" : [Monto_sol],
+        "plazo_sol" : [plazo_sol],
+        "MotivoRechazo" : [MotivoRechazo]
+    })
+    obtenerExcepcion['Fechap'] = pd.to_datetime(obtenerExcepcion['Fechap'], dayfirst=True)
+    respuesta = getExcepcion(obtenerExcepcion)
+    return ({'Mensaje':respuesta})
+
+
+def getExcepcion(getExcepcion):
+    cnxn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER=10.4.12.15;DATABASE=GNormativas;UID=uNormativas;PWD=123456789')
+    cursor = cnxn.cursor()
+    query = "SELECT TOP 1 * FROM dbo.PruebaRiezgo_3 WHERE"+ " cNumeroSolicitud =" + str(getExcepcion['num_solicitud'][0]) + " AND dFechaConsulta ="+"'"+str(getExcepcion['Fechap'][0])+"'" +" ORDER BY idRegistroConsultaModeloNoBancarizado DESC"
+    cursor.execute(query)
+    row = cursor.fetchone()
+    aceptar = false
+    if(row!=null):
+        while row:
+            num_solicitud = row[2],
+            Monto_sol = row[13],
+            plazo_sol = row[14]
+            row = cursor.fetchone()
+            aceptar=true
+    else:
+        return 'Error 10: No hay datos que actualizar'
+    
+    if(aceptar != false):
+        queryUpdate = "UPDATE dbo.PruebaRiezgo_3 SET cMotivoRechazo ="+ "'"+getExcepcion['MotivoRechazo'][0]+"'"+ "WHERE cNumeroSolicitud =" + str(getExcepcion['num_solicitud'][0]) + " AND nPlazo ="+ str(plazo_sol)+ "AND nMontoSolicitado ="+ str(getExcepcion['Monto_sol'][0])+ "AND dFechaConsulta ="+ "'"+str(getExcepcion['Fechap'][0])+"'"
+        cursor.execute(queryUpdate)
+        cnxn.commit()
+        return 'Actualizado correctamente'
+    else:
+        return 'Error 10: No hay datos que actualizar'
+
+ 
 @app.route('/modeloNoBancarizado', methods=['POST'])
 def getModelo():
-        
+    
     from urllib.parse import unquote
     #decoded = unquote(t)
     
@@ -573,18 +638,12 @@ def getModelo():
               'DiaDeLaSemana': response['DiaDeLaSemana'][0],
               'DestinoCredito': response['DestinoCredito'][0],
 
-
             })
-
 
 if __name__ == '__main__':
     from waitress import serve
     serve(app, host="0.0.0.0", port=4000)
     
-
-# %%
-x = 2 
-print(x)
 
 
 
